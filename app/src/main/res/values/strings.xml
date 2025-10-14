@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">AutoApply</string>
+
+    <!-- Job Titles -->
+    <string name="software_engineer">Software Engineer</string>
+    <string name="backend_engineer">Backend Engineer</string>
+    <string name="mobile_developer">Mobile Developer</string>
+    <string name="data_scientist">Data Scientist</string>
+    <string name="frontend_engineer">Frontend Engineer</string>
+
+    <!-- Locations -->
+    <string name="san_francisco">San Francisco, CA</string>
+    <string name="seattle">Seattle, WA</string>
+    <string name="new_york">New York, NY</string>
+    <string name="austin">Austin, TX</string>
+    <string name="remote">Remote</string>
+
+    <!-- Pay Details -->
+    <string name="pay_120k_150k">$120K – $150K / year</string>
+    <string name="pay_110k_140k">$110K – $140K / year</string>
+    <string name="pay_100k_130k">$100K – $130K / year</string>
+    <string name="pay_115k_145k">$115K – $145K / year</string>
+    <string name="pay_105k_135k">$105K – $135K / year</string>
+
+    <!-- Companies -->
+    <string name="google">Google</string>
+    <string name="amazon">Amazon</string>
+    <string name="spotify">Spotify</string>
+    <string name="ibm">IBM</string>
+    <string name="shopify">Shopify</string>
+</resources>
