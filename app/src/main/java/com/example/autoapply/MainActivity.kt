@@ -5,6 +5,7 @@ import androidx.compose.ui.Alignment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,8 +21,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +38,15 @@ import androidx.compose.ui.unit.dp
 import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
 import com.example.autoapply.ui.theme.AutoApplyTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +85,7 @@ fun TopAppBar(modifier: Modifier = Modifier){
     CenterAlignedTopAppBar(
         title = {
             Row (
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ){
                 Image(
                     modifier = Modifier
@@ -89,23 +101,32 @@ fun TopAppBar(modifier: Modifier = Modifier){
             }
         },
         modifier = modifier
+            .clip(MaterialTheme.shapes.small)
     )
 }
 
 @Composable
-fun ApplyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(onClick = { onClick() }) {
-        Text("Apply")
-    }
-}
-@Composable
 fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    val color = animateColorAsState(
+        targetValue = if (expanded) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.secondaryContainer
+    )
     Card(
         modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
     ) {
-        Column {
+        Column (
+            modifier = Modifier
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+                .background(color = color.value)
+        ) {
             Row{
                 Image(
                     painter = painterResource(job.companyIconResourceId),
@@ -148,9 +169,19 @@ fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.weight(1f))
-                ApplyButton(
-                    {print("Nelsen")},
+                if(!expanded) {
+                    ApplyButton(
+                        expanded,
+                        { expanded = !expanded },
+                        modifier = Modifier
+                    )
+                }
+            }
+            if(expanded) {
+                ApplicationForm(
+                    cancel = {expanded = !expanded},
                     modifier = Modifier
+                        .padding(8.dp)
                 )
             }
         }
@@ -158,13 +189,27 @@ fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun JobList(jobs: List<JobDetails>, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier){
-        items(jobs){ job ->
-            JobCard(
-                job,
-                modifier = modifier.padding(8.dp)
-            )
+fun ApplyButton(expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Button(onClick = { onClick() }) {
+        Text("Apply")
+    }
+}
+
+@Composable
+fun ApplicationForm(cancel: () -> Unit, modifier: Modifier = Modifier){
+    var text by remember { mutableStateOf("") }
+    Row{
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            label = {Text("First Name")},
+            modifier = modifier.weight(2f)
+        )
+        OutlinedButton(
+            onClick = cancel,
+            modifier = modifier.weight(1f)
+        ) {
+            Text("Cancel")
         }
     }
 }
@@ -177,10 +222,10 @@ fun JobCardPreview() {
     }
 }
 
-@Preview
-@Composable
-fun DarkThemePreview(){
-    AutoApplyTheme(darkTheme = true) {
-        JobsApp()
-    }
-}
+//@Preview
+//@Composable
+//fun DarkThemePreview(){
+//    AutoApplyTheme(darkTheme = true) {
+//        JobsApp()
+//    }
+//}
