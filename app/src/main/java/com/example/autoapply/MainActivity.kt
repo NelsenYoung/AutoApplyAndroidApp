@@ -48,6 +48,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import android.util.Log
+import com.example.autoapply.ui.JobsApp
 
 private const val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {
@@ -92,24 +93,24 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun JobsApp(modifier: Modifier = Modifier){
-    val layoutDirection = LocalLayoutDirection.current
-    Scaffold (
-        topBar = {
-            TopAppBar()
-        }
-    ) { it ->
-        LazyColumn(contentPadding = it){
-            items(Datasource().loadJobs()){
-                JobCard(
-                    it,
-                    modifier = modifier.padding(8.dp)
-                )
-            }
-        }
-    }
-}
+//@Composable
+//fun JobsApp(modifier: Modifier = Modifier){
+//    val layoutDirection = LocalLayoutDirection.current
+//    Scaffold (
+//        topBar = {
+//            TopAppBar()
+//        }
+//    ) { it ->
+//        LazyColumn(contentPadding = it){
+//            items(Datasource().loadJobs()){
+//                JobCard(
+//                    it,
+//                    modifier = modifier.padding(8.dp)
+//                )
+//            }
+//        }
+//    }
+//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

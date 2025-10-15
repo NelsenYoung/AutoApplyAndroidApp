@@ -25,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,11 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.autoapply.R
 import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
@@ -48,8 +47,8 @@ import com.example.autoapply.ui.theme.AutoApplyTheme
 
 @Composable
 fun JobsApp(
-    appViewModel: AppViewModel = viewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    appViewModel: AppViewModel = viewModel()
 ){
     val appUiState by appViewModel.uiState.collectAsState()
     Scaffold (
@@ -61,7 +60,11 @@ fun JobsApp(
             items(Datasource().loadJobs()){
                 JobCard(
                     it,
-                    modifier = modifier.padding(8.dp)
+                    {appViewModel.updateSelectedJob(it.jobTitleResourceId)},
+                    {appViewModel.cancelSelectedJob()},
+                    {appViewModel.submitApplication(it.jobTitleResourceId)},
+                    modifier = modifier.padding(8.dp),
+                    uiState = appUiState
                 )
             }
         }
@@ -95,11 +98,17 @@ fun TopAppBar(modifier: Modifier = Modifier){
 }
 
 @Composable
-fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
-    var expanded by remember { mutableStateOf(false) }
-    var submitted by remember { mutableStateOf(false)}
+fun JobCard(
+    job: JobDetails,
+    expand: () -> Unit,
+    cancel: () -> Unit,
+    submit: () -> Unit,
+    modifier: Modifier = Modifier,
+    uiState: AppUiState) {
+    val expanded = uiState.selectedJobId == job.jobTitleResourceId && uiState.jobSelected
+    val submitted = job.jobTitleResourceId in uiState.submittedApplications
     val color = animateColorAsState(
-        targetValue = if (expanded) MaterialTheme.colorScheme.primaryContainer
+        targetValue = if (uiState.selectedJobId == job.jobTitleResourceId) MaterialTheme.colorScheme.primaryContainer
         else if (submitted) MaterialTheme.colorScheme.tertiaryContainer
         else MaterialTheme.colorScheme.secondaryContainer
     )
@@ -161,26 +170,18 @@ fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
                 )
                 Spacer(Modifier.weight(1f))
                 if (submitted) {
-                    OutlinedButton(
-                        onClick = {},
-                        modifier = modifier
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
-                            .clip(MaterialTheme.shapes.small)
-                    ){
-                        Text("Submitted")
-                    }
+                    Text("Submitted")
                 }else if(!expanded) {
                     ApplyButton(
-                        expanded,
-                        { expanded = !expanded },
+                        onClick = { expand() },
                         modifier = Modifier
                     )
                 }
             }
             if(expanded && !submitted) {
                 ApplicationForm(
-                    submit = { submitted = true},
-                    cancel = {expanded = !expanded},
+                    submit = { submit() },
+                    cancel = { cancel() },
                     modifier = Modifier
                         .padding(8.dp)
                 )
@@ -190,7 +191,7 @@ fun JobCard(job: JobDetails, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ApplyButton(expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ApplyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(onClick = { onClick() }) {
         Text("Apply")
     }
