@@ -45,6 +45,9 @@ import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
 import com.example.autoapply.ui.theme.AutoApplyTheme
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun JobsApp(
@@ -61,6 +64,7 @@ fun JobsApp(
             itemsIndexed(Datasource().loadJobs()){ index, job ->
                 JobCard(
                     job,
+                    index = index,
                     {appViewModel.updateSelectedJob(job.jobTitleResourceId)},
                     {appViewModel.cancelSelectedJob()},
                     {appViewModel.submitApplication(job.jobTitleResourceId)},
@@ -101,16 +105,18 @@ fun TopAppBar(modifier: Modifier = Modifier){
 @Composable
 fun JobCard(
     job: JobDetails,
+    index: Int,
     expand: () -> Unit,
     cancel: () -> Unit,
     submit: () -> Unit,
     modifier: Modifier = Modifier,
-    uiState: AppUiState) {
+    uiState: AppUiState
+) {
     val expanded = uiState.selectedJobId == job.jobTitleResourceId && uiState.jobSelected
     val submitted = job.jobTitleResourceId in uiState.submittedApplications
     val color = animateColorAsState(
-        targetValue = if (uiState.selectedJobId == job.jobTitleResourceId) MaterialTheme.colorScheme.primaryContainer
-        else if (submitted) MaterialTheme.colorScheme.tertiaryContainer
+        targetValue = if (submitted) MaterialTheme.colorScheme.tertiaryContainer
+        else if (uiState.selectedJobId == job.jobTitleResourceId) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.secondaryContainer
     )
     Card(
@@ -175,12 +181,14 @@ fun JobCard(
                 }else if(!expanded) {
                     ApplyButton(
                         onClick = { expand() },
+                        index = index,
                         modifier = Modifier
                     )
                 }
             }
             if(expanded && !submitted) {
                 ApplicationForm(
+                    index = index,
                     submit = { submit() },
                     cancel = { cancel() },
                     modifier = Modifier
@@ -192,16 +200,25 @@ fun JobCard(
 }
 
 @Composable
-fun ApplyButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(onClick = { onClick() }) {
+fun ApplyButton(onClick: () -> Unit, index: Int, modifier: Modifier = Modifier) {
+    Button(
+        onClick = { onClick() },
+        modifier = Modifier.semantics{
+            contentDescription = "Button $index"
+        }
+    ) {
         Text("Apply")
     }
 }
 
 @Composable
-fun ApplicationForm(submit: () -> Unit, cancel: () -> Unit, modifier: Modifier = Modifier){
+fun ApplicationForm(index: Int, submit: () -> Unit, cancel: () -> Unit, modifier: Modifier = Modifier){
     var text by remember { mutableStateOf("") }
-    Row{
+    Row(
+        modifier = modifier.semantics{
+            contentDescription = "Form $index"
+        }
+    ){
         TextField(
             value = text,
             onValueChange = { text = it },
