@@ -44,6 +44,7 @@ import com.example.autoapply.R
 import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
 import com.example.autoapply.ui.theme.AutoApplyTheme
+import androidx.compose.foundation.lazy.itemsIndexed
 
 @Composable
 fun JobsApp(
@@ -57,12 +58,12 @@ fun JobsApp(
         }
     ) { it ->
         LazyColumn(contentPadding = it){
-            items(Datasource().loadJobs()){
+            itemsIndexed(Datasource().loadJobs()){ index, job ->
                 JobCard(
-                    it,
-                    {appViewModel.updateSelectedJob(it.jobTitleResourceId)},
+                    job,
+                    {appViewModel.updateSelectedJob(job.jobTitleResourceId)},
                     {appViewModel.cancelSelectedJob()},
-                    {appViewModel.submitApplication(it.jobTitleResourceId)},
+                    {appViewModel.submitApplication(job.jobTitleResourceId)},
                     modifier = modifier.padding(8.dp),
                     uiState = appUiState
                 )
