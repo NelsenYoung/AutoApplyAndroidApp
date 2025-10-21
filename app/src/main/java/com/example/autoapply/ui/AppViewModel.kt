@@ -7,11 +7,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import androidx.compose.ui.res.stringArrayResource
 import com.example.autoapply.R
+import com.example.autoapply.data.Datasource
+import android.content.res.Resources
 
-class AppViewModel : ViewModel(){
+class AppViewModel(private val resources: Resources) : ViewModel(){
     // This is the Backing property and the .asStateFlow() sets the getter of uiState to _uiState
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
+    val jobs = Datasource().loadJobs()
 
     init{
         resetApp()
@@ -25,12 +28,14 @@ class AppViewModel : ViewModel(){
     }
 
     fun updateSelectedJob(jobIndex: Int){
+        val questions = resources.getStringArray(jobs[jobIndex].applicationQuestionsId).toList()
+        val answers = MutableList(questions.size) { "" }
         _uiState.value = AppUiState(
             jobSelected = true,
             selectedJobIndex = jobIndex,
             submittedApplications = _uiState.value.submittedApplications,
-            applicationQuestions = _uiState.value.applicationQuestions,
-            applicationAnswers = _uiState.value.applicationAnswers
+            applicationQuestions = questions,
+            applicationAnswers = answers
         )
     }
 
@@ -49,23 +54,20 @@ class AppViewModel : ViewModel(){
         )
     }
 
-    fun updateQuestions(questions: List<String>){
-        _uiState.value = _uiState.value.copy(
-            applicationQuestions = questions.toMutableList()
-        )
-    }
+    fun updateAnswer(answer: String, index: Int) {
+        // 1. Get the current list of answers and create a new mutable copy.
+        val newAnswers = _uiState.value.applicationAnswers.toMutableList()
 
-    fun updateAnswers(answers: MutableList<String>){
-        _uiState.value = _uiState.value.copy(
-            applicationAnswers = answers
-        )
-    }
+        // 2. Safely update the value at the specified index.
+        //    We use '=' to replace the string, not '+='.
+        if (index in newAnswers.indices) {
+            newAnswers[index] = answer
+        }
 
-    fun updateAnswer(answer: String, index: Int){
-        _uiState.value = _uiState.value.copy(
-            applicationAnswers = _uiState.value.applicationAnswers.apply {
-                this[index] += answer
-            }
-        )
+        // 3. Use `update` and `.copy()` to create a brand new AppUiState instance.
+        //    This is the key to triggering recomposition.
+        _uiState.update { currentState ->
+            currentState.copy(applicationAnswers = newAnswers)
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.autoapply.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -14,22 +15,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,29 +34,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.autoapply.R
 import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
 import com.example.autoapply.ui.theme.AutoApplyTheme
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.modifier.modifierLocalConsumer
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringArrayResource
-import androidx.navigation.NavController
 
-enum class AppScreen(){
-    Start,
-    Form,
-    Summary
+enum class AppScreen(@StringRes val title: Int){
+    Start(title = R.string.app_name),
+    Form(title = R.string.application_form),
+    Summary(title = R.string.summary)
 }
 
 val jobs = Datasource().loadJobs()
@@ -79,29 +70,34 @@ fun JobsApp(
         composable(route = AppScreen.Start.name) {
             JobList(
                 appUiState,
-                appViewModel,
-                navController,
+                apply = { index: Int ->
+                    appViewModel.updateSelectedJob(index)
+                    navController.navigate(AppScreen.Form.name)
+                },
                 modifier = modifier
             )
         }
         composable(route = AppScreen.Form.name){
-            val context = LocalContext.current
-            val answers = appUiState.applicationAnswers
             TopAppBar()
             ApplicationForm(
                 questions = appUiState.applicationQuestions,
-                answers = answers,
-                updateAnswers = { newAnswers -> appViewModel.updateAnswers(newAnswers) },
-                updateAnswer = { newAnswer, index -> appViewModel.updateAnswer(newAnswer, index) },
+                curAnswers = appUiState.applicationAnswers,
+                updateAnswer = { answer, index ->
+                    appViewModel.updateAnswer(answer, index)
+                },
+                next = { navController.navigate(AppScreen.Summary.name) },
                 modifier = Modifier
                     .padding(8.dp)
             )
         }
         composable(route = AppScreen.Summary.name){
             SummaryScreen(
-                job = jobs[appUiState.selectedJobIndex],
                 questions =appUiState.applicationQuestions,
-                answers = appUiState.applicationAnswers
+                answers = appUiState.applicationAnswers,
+                submit = {
+                    appViewModel.submitApplication(appUiState.selectedJobIndex)
+                    navController.navigate(AppScreen.Start.name)
+                }
             )
         }
     }
@@ -110,8 +106,7 @@ fun JobsApp(
 @Composable
 fun JobList(
     appUiState: AppUiState,
-    appViewModel: AppViewModel,
-    navController: NavController,
+    apply: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ){
     Scaffold (
@@ -121,17 +116,11 @@ fun JobList(
     ) { it ->
         LazyColumn(contentPadding = it){
             itemsIndexed(jobs){ index, job ->
-                val questions = stringArrayResource(id = job.applicationQuestionsId).toList()
-                val answers = MutableList(questions.size) { "" }
                 JobCard(
                     job,
                     index = index,
                     uiState = appUiState,
-                    expand = {
-                                navController.navigate(AppScreen.Form.name)
-                                appViewModel.updateQuestions(questions)
-                                appViewModel.updateAnswers(answers)
-                             },
+                    expand = apply,
                     modifier = modifier.padding(8.dp)
                 )
             }
@@ -170,7 +159,7 @@ fun JobCard(
     job: JobDetails,
     index: Int,
     uiState: AppUiState,
-    expand: () -> Unit,
+    expand: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val expanded = uiState.selectedJobIndex == index && uiState.jobSelected
@@ -241,7 +230,7 @@ fun JobCard(
                     Text("Submitted")
                 }else if(!expanded) {
                     ApplyButton(
-                        onClick = { expand() },
+                        onClick = { expand(index) },
                         index = index,
                         modifier = Modifier
                     )
@@ -264,26 +253,54 @@ fun ApplyButton(onClick: () -> Unit, index: Int, modifier: Modifier = Modifier) 
 }
 
 @Composable
-fun ApplicationForm(questions: List<String>, answers: List<String>, updateAnswers: (MutableList<String>) -> Unit, updateAnswer: (String, Int) -> Unit, modifier: Modifier = Modifier){
-    LazyColumn{
-        itemsIndexed(questions){ index, question ->
-            TextField(
-                value = answers[index],
-                onValueChange = {
-                                    updateAnswer(it, index)
-                                },
-                label = {Text(question)}
-            )
+fun ApplicationForm(questions: List<String>, curAnswers: List<String>, updateAnswer: (String, Int) -> Unit, next: () -> Unit, modifier: Modifier = Modifier){
+    Scaffold (
+        topBar = {
+            TopAppBar()
+        },
+        floatingActionButton = {
+            Button(
+                onClick = { next() },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("Next")
+            }
+        }
+    ) {it ->
+        LazyColumn (contentPadding = it){
+            itemsIndexed(questions){ index, question ->
+                TextField(
+                    value = curAnswers[index],
+                    onValueChange = { newValue ->
+                        updateAnswer(newValue, index)
+                    },
+                    label = {Text(question)}
+                )
+            }
         }
     }
+
 }
 
 @Composable
-fun SummaryScreen(job: JobDetails, questions: List<String>, answers: List<String>, modifier: Modifier = Modifier){
-    Text(text = LocalContext.current.getString(job.jobTitleResourceId))
-    LazyColumn {
-        itemsIndexed(questions){ index, question ->
-            Text("$question: ${answers[index]}")
+fun SummaryScreen(questions: List<String>, answers: List<String>, submit: () -> Unit, modifier: Modifier = Modifier){
+    Scaffold (
+        topBar = {
+            TopAppBar()
+        },
+        floatingActionButton = {
+            Button(
+                onClick = { submit() },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("Submit")
+            }
+        }
+    ) { it ->
+        LazyColumn (contentPadding = it) {
+            itemsIndexed(questions){ index, question ->
+                Text("$question: ${answers[index]}")
+            }
         }
     }
 }
@@ -302,10 +319,22 @@ fun ApplicationFormPreview() {
     AutoApplyTheme {
         ApplicationForm(
             questions = listOf("Question 1", "Question 2", "Question 3"),
-            answers = MutableList(3) { "" },
-            updateAnswers = { newAnswers -> },
-            updateAnswer = { newAnswer, index -> },
+            curAnswers =  listOf("Answer 1", "Answer 2", "Answer 3"),
+            updateAnswer = { answer, index -> },
+            next = {},
             modifier = Modifier.padding(8.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SummaryPreview() {
+    AutoApplyTheme {
+        SummaryScreen(
+            questions = listOf("Question 1", "Question 2", "Question 3"),
+            answers =  listOf("Answer 1", "Answer 2", "Answer 3"),
+            submit = { }
         )
     }
 }

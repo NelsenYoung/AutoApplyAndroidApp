@@ -48,6 +48,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import android.util.Log
+import com.example.autoapply.ui.AppViewModel
 import com.example.autoapply.ui.JobsApp
 
 private const val TAG = "MainActivity"
@@ -55,10 +56,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate Called")
+        val viewModel = AppViewModel(this.resources)
         enableEdgeToEdge()
             setContent {
             AutoApplyTheme {
-                JobsApp()
+                JobsApp(appViewModel = viewModel)
             }
         }
     }
