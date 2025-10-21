@@ -61,4 +61,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
+    implementation("androidx.navigation:navigation-compose:2.9.5")
 }

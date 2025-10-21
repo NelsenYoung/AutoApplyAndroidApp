@@ -28,4 +28,24 @@
     <string name="spotify">Spotify</string>
     <string name="ibm">IBM</string>
     <string name="shopify">Shopify</string>
+
+    <!-- Questions -->
+    <string-array name="google_questions">
+        <item>What makes you a good fit at Google?</item>
+        <item>How does working at Google align with you career goals?</item>
+        <item>Desired Salary</item>
+    </string-array>
+    <string-array name="amazon_questions">
+        <item>University</item>
+    </string-array>
+    <string-array name="spotify_questions">
+        <item>First Name</item>
+        <item>Last Name</item>
+        <item>Do you have pets?</item>
+    </string-array>
+    <string-array name="ibm_questions">
+        <item>Name</item>
+    </string-array>
+    <string-array name="shopify_questions">
+    </string-array>
 </resources>
