@@ -50,6 +50,15 @@ import androidx.compose.foundation.background
 import android.util.Log
 import com.example.autoapply.ui.AppViewModel
 import com.example.autoapply.ui.JobsApp
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+
+val supabase = createSupabaseClient(
+    supabaseUrl = "https://lmhqktujstjshnbfdiiz.supabase.co",
+    supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtaHFrdHVqc3Rqc2huYmZkaWl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExMjkxMzYsImV4cCI6MjA3NjcwNTEzNn0.N5hopX_42xwF8AGuG4YJGzncgVfYMuepBNW1EWnUvfo"
+) {
+    install(Postgrest)
+}
 
 private const val TAG = "MainActivity"
 class MainActivity : ComponentActivity() {

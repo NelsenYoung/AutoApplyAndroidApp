@@ -2,6 +2,7 @@
     <string name="app_name">AutoApply</string>
     <string name="application_form">Application Form</string>
     <string name="summary">Summary</string>
+    <string name="profile">Profile</string>
 
     <!-- Job Titles -->
     <string name="software_engineer">Software Engineer</string>

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.2.20"
 }
 
 android {
@@ -62,4 +63,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation(kotlin("test"))
     implementation("androidx.navigation:navigation-compose:2.9.5")
+    implementation("androidx.credentials:credentials:1.6.0-beta02")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0-beta02")
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.4"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.ktor:ktor-client-android:3.3.0")
 }

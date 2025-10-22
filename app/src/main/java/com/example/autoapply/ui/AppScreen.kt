@@ -16,11 +16,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -38,7 +45,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -50,7 +59,8 @@ import com.example.autoapply.ui.theme.AutoApplyTheme
 enum class AppScreen(@StringRes val title: Int){
     Start(title = R.string.app_name),
     Form(title = R.string.application_form),
-    Summary(title = R.string.summary)
+    Summary(title = R.string.summary),
+    Profile(title = R.string.profile)
 }
 
 val jobs = Datasource().loadJobs()
@@ -60,45 +70,58 @@ fun JobsApp(
     modifier: Modifier = Modifier,
     appViewModel: AppViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val credentialManager = CredentialManager.create(context)
     val appUiState by appViewModel.uiState.collectAsState()
     val navController = rememberNavController()
-    NavHost(
-        navController = navController,
-        startDestination = AppScreen.Start.name,
-        modifier = modifier
-    ) {
-        composable(route = AppScreen.Start.name) {
-            JobList(
-                appUiState,
-                apply = { index: Int ->
-                    appViewModel.updateSelectedJob(index)
-                    navController.navigate(AppScreen.Form.name)
-                },
-                modifier = modifier
-            )
-        }
-        composable(route = AppScreen.Form.name){
+    Scaffold (
+        topBar = {
             TopAppBar()
-            ApplicationForm(
-                questions = appUiState.applicationQuestions,
-                curAnswers = appUiState.applicationAnswers,
-                updateAnswer = { answer, index ->
-                    appViewModel.updateAnswer(answer, index)
-                },
-                next = { navController.navigate(AppScreen.Summary.name) },
-                modifier = Modifier
-                    .padding(8.dp)
-            )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController)
         }
-        composable(route = AppScreen.Summary.name){
-            SummaryScreen(
-                questions =appUiState.applicationQuestions,
-                answers = appUiState.applicationAnswers,
-                submit = {
-                    appViewModel.submitApplication(appUiState.selectedJobIndex)
-                    navController.navigate(AppScreen.Start.name)
-                }
-            )
+    ) { contentPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = AppScreen.Start.name,
+            modifier = modifier.padding(contentPadding)
+        ) {
+            composable(route = AppScreen.Start.name) {
+                JobList(
+                    appUiState,
+                    apply = { index: Int ->
+                        appViewModel.updateSelectedJob(index)
+                        navController.navigate(AppScreen.Form.name)
+                    },
+                    modifier = modifier
+                )
+            }
+            composable(route = AppScreen.Form.name){
+                ApplicationForm(
+                    questions = appUiState.applicationQuestions,
+                    curAnswers = appUiState.applicationAnswers,
+                    updateAnswer = { answer, index ->
+                        appViewModel.updateAnswer(answer, index)
+                    },
+                    next = { navController.navigate(AppScreen.Summary.name) },
+                    modifier = Modifier
+                        .padding(8.dp)
+                )
+            }
+            composable(route = AppScreen.Summary.name){
+                SummaryScreen(
+                    questions =appUiState.applicationQuestions,
+                    answers = appUiState.applicationAnswers,
+                    submit = {
+                        appViewModel.submitApplication(appUiState.selectedJobIndex)
+                        navController.navigate(AppScreen.Start.name)
+                    }
+                )
+            }
+            composable(route = AppScreen.Profile.name){
+                ProfileScreen()
+            }
         }
     }
 }
@@ -110,9 +133,7 @@ fun JobList(
     modifier: Modifier = Modifier,
 ){
     Scaffold (
-        topBar = {
-            TopAppBar()
-        }
+
     ) { it ->
         LazyColumn(contentPadding = it){
             itemsIndexed(jobs){ index, job ->
@@ -152,6 +173,38 @@ fun TopAppBar(modifier: Modifier = Modifier){
         modifier = modifier
             .clip(MaterialTheme.shapes.small)
     )
+}
+
+@Composable
+fun BottomNavigationBar(navController: NavHostController, modifier: Modifier = Modifier){
+    NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
+        NavigationBarItem(
+            selected = true,
+            onClick = { navController.navigate(AppScreen.Start.name) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Home,
+                    contentDescription = null
+                )
+            },
+            label = {
+                Text(text = "Jobs")
+            }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { navController.navigate(AppScreen.Profile.name) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = null
+                )
+            },
+            label = {
+                Text(text = "Profile")
+            }
+        )
+    }
 }
 
 @Composable
@@ -255,9 +308,6 @@ fun ApplyButton(onClick: () -> Unit, index: Int, modifier: Modifier = Modifier) 
 @Composable
 fun ApplicationForm(questions: List<String>, curAnswers: List<String>, updateAnswer: (String, Int) -> Unit, next: () -> Unit, modifier: Modifier = Modifier){
     Scaffold (
-        topBar = {
-            TopAppBar()
-        },
         floatingActionButton = {
             Button(
                 onClick = { next() },
@@ -285,9 +335,6 @@ fun ApplicationForm(questions: List<String>, curAnswers: List<String>, updateAns
 @Composable
 fun SummaryScreen(questions: List<String>, answers: List<String>, submit: () -> Unit, modifier: Modifier = Modifier){
     Scaffold (
-        topBar = {
-            TopAppBar()
-        },
         floatingActionButton = {
             Button(
                 onClick = { submit() },
@@ -304,6 +351,12 @@ fun SummaryScreen(questions: List<String>, answers: List<String>, submit: () -> 
         }
     }
 }
+
+@Composable
+fun ProfileScreen(){
+    Text("Profile Screen")
+}
+
 
 @Preview(showBackground = true)
 @Composable
