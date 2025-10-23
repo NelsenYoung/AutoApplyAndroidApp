@@ -166,13 +166,17 @@ fun JobsApp(
                 )
             }
             composable(route = AppScreen.LogIn.name){
+                var retry by remember { mutableStateOf(false) }
                 LogInScreen(
                     submit = { email, password ->
                         GlobalState.login(email, password)
                         if(GlobalState.user != null) {
-                            navController.navigate(AppScreen.Start.name)
+                            navController.navigate(AppScreen.Profile.name)
+                        }else{
+                            retry = true
                         }
-                    }
+                    },
+                    retry = retry
                 )
             }
         }
@@ -478,7 +482,7 @@ fun SupabaseTest(login: () -> Unit){
 }
 
 @Composable
-fun LogInScreen(submit: (String, String) -> Unit){
+fun LogInScreen(submit: (String, String) -> Unit, retry: Boolean = false){
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Column{
@@ -499,6 +503,12 @@ fun LogInScreen(submit: (String, String) -> Unit){
         {
             Text("Log In")
         }
+        if(retry) Text(
+            "Incorrect Username and Password combination",
+            modifier = Modifier
+                .padding(8.dp),
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }
 
