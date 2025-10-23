@@ -64,14 +64,44 @@ import io.github.jan.supabase.postgrest.Postgrest
 import com.example.autoapply.BuildConfig
 import com.example.autoapply.model.User
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+
+val supabase = createSupabaseClient(
+    supabaseUrl = BuildConfig.SUPABASE_URL,
+    supabaseKey = BuildConfig.SUPABASE_PUBLIC_ANON_KEY
+) {
+    install(Postgrest)
+}
+
+object GlobalState {
+    var user: User? = null
+
+    fun updateUser(user: User?) {
+        this.user = user
+    }
+    
+    fun login(email: String, password: String){
+        runBlocking {
+            val users = supabase.from("users").select().decodeList<User>()
+            for (user in users) {
+                if (user.email == email && user.password == password) {
+                    updateUser(user)
+                }
+            }
+        }
+    }
+}
 
 enum class AppScreen(@StringRes val title: Int){
     Start(title = R.string.app_name),
     Form(title = R.string.application_form),
     Summary(title = R.string.summary),
-    Profile(title = R.string.profile)
+    Profile(title = R.string.profile),
+    LogIn(title = R.string.log_in)
 }
 
 val jobs = Datasource().loadJobs()
@@ -131,7 +161,19 @@ fun JobsApp(
                 )
             }
             composable(route = AppScreen.Profile.name){
-                SupabaseTest()
+                SupabaseTest(
+                    login = { navController.navigate(AppScreen.LogIn.name) }
+                )
+            }
+            composable(route = AppScreen.LogIn.name){
+                LogInScreen(
+                    submit = { email, password ->
+                        GlobalState.login(email, password)
+                        if(GlobalState.user != null) {
+                            navController.navigate(AppScreen.Start.name)
+                        }
+                    }
+                )
             }
         }
     }
@@ -404,14 +446,7 @@ fun SummaryPreview() {
 }
 
 @Composable
-fun SupabaseTest(){
-    val supabase = createSupabaseClient(
-        supabaseUrl = BuildConfig.SUPABASE_URL,
-        supabaseKey = BuildConfig.SUPABASE_PUBLIC_ANON_KEY
-    ) {
-        install(Postgrest)
-    }
-
+fun SupabaseTest(login: () -> Unit){
     var users by remember { mutableStateOf<List<User>>(listOf()) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -419,19 +454,60 @@ fun SupabaseTest(){
                 .select().decodeList<User>()
         }
     }
-    Text(users.size.toString())
-//    LazyColumn(){
-//        itemsIndexed(users){ index, cur_user ->
-//            Text(cur_user.email)
-//            Text(cur_user.password)
-//        }
-//    }
+
+    if(GlobalState.user == null){
+        Column(){
+            Text(
+                "Please log in or sign up",
+                modifier = Modifier.padding(8.dp)
+            )
+            Row {
+                Button(onClick = { /*TODO*/ }) {
+                    Text("Sign Up")
+                }
+                Button(onClick = { login() }) {
+                    Text("Log In")
+                }
+            }
+        }
+
+    }else{
+        Text("Welcome ${GlobalState.user!!.email}")
+    }
+
+}
+
+@Composable
+fun LogInScreen(submit: (String, String) -> Unit){
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    Column{
+        TextField(
+            value = email,
+            onValueChange = {email = it},
+            label = {Text("Email")}
+        )
+        TextField(
+            value = password,
+            onValueChange = {password = it},
+            label = {Text("Password")}
+        )
+        Button(
+            modifier = Modifier.padding(8.dp),
+            onClick = { submit(email, password) }
+        )
+        {
+            Text("Log In")
+        }
+    }
 }
 
 @Preview
 @Composable
 fun DarkThemePreview(){
     AutoApplyTheme(darkTheme = true) {
-        SupabaseTest()
+        SupabaseTest(
+            login = {}
+        )
     }
 }
