@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization")
 }
 
 android {
@@ -28,6 +29,7 @@ android {
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"${properties.getProperty("SUPABASE_PUBLISHABLE_KEY")}\"")
         buildConfigField("String", "SECRET", "\"${properties.getProperty("SECRET")}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_PUBLIC_ANON_KEY", "\"${properties.getProperty("SUPABASE_PUBLIC_ANON_KEY")}\"")
     }
 
     buildTypes {
@@ -79,4 +81,6 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.4"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.ktor:ktor-client-android:3.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or a newer version
 }

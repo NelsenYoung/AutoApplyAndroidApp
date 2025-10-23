@@ -32,8 +32,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +59,13 @@ import com.example.autoapply.R
 import com.example.autoapply.data.Datasource
 import com.example.autoapply.model.JobDetails
 import com.example.autoapply.ui.theme.AutoApplyTheme
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import com.example.autoapply.BuildConfig
+import com.example.autoapply.model.User
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class AppScreen(@StringRes val title: Int){
     Start(title = R.string.app_name),
@@ -120,7 +131,7 @@ fun JobsApp(
                 )
             }
             composable(route = AppScreen.Profile.name){
-                ProfileScreen()
+                SupabaseTest()
             }
         }
     }
@@ -392,10 +403,35 @@ fun SummaryPreview() {
     }
 }
 
-//@Preview
-//@Composable
-//fun DarkThemePreview(){
-//    AutoApplyTheme(darkTheme = true) {
-//        JobsApp()
+@Composable
+fun SupabaseTest(){
+    val supabase = createSupabaseClient(
+        supabaseUrl = BuildConfig.SUPABASE_URL,
+        supabaseKey = BuildConfig.SUPABASE_PUBLIC_ANON_KEY
+    ) {
+        install(Postgrest)
+    }
+
+    var users by remember { mutableStateOf<List<User>>(listOf()) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+             users = supabase.from("users")
+                .select().decodeList<User>()
+        }
+    }
+    Text(users.size.toString())
+//    LazyColumn(){
+//        itemsIndexed(users){ index, cur_user ->
+//            Text(cur_user.email)
+//            Text(cur_user.password)
+//        }
 //    }
-//}
+}
+
+@Preview
+@Composable
+fun DarkThemePreview(){
+    AutoApplyTheme(darkTheme = true) {
+        SupabaseTest()
+    }
+}
