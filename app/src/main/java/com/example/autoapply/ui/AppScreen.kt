@@ -83,8 +83,8 @@ object GlobalState {
     fun updateUser(user: User?) {
         this.user = user
     }
-    
-    fun login(email: String, password: String){
+
+    fun login(email: String, password: String) {
         runBlocking {
             val users = supabase.from("users").select().decodeList<User>()
             for (user in users) {
@@ -94,14 +94,22 @@ object GlobalState {
             }
         }
     }
-}
 
+    fun signup(email: String, password: String) {
+        runBlocking {
+            val newUser = User(null, email, password)
+            supabase.from("users").insert(newUser)
+            updateUser(newUser)
+        }
+    }
+}
 enum class AppScreen(@StringRes val title: Int){
     Start(title = R.string.app_name),
     Form(title = R.string.application_form),
     Summary(title = R.string.summary),
     Profile(title = R.string.profile),
-    LogIn(title = R.string.log_in)
+    LogIn(title = R.string.log_in),
+    SignUp(title = R.string.sign_up)
 }
 
 val jobs = Datasource().loadJobs()
@@ -162,7 +170,16 @@ fun JobsApp(
             }
             composable(route = AppScreen.Profile.name){
                 SupabaseTest(
+                    signup = { navController.navigate(AppScreen.SignUp.name) },
                     login = { navController.navigate(AppScreen.LogIn.name) }
+                )
+            }
+            composable(route = AppScreen.SignUp.name){
+                SignUpScreen(
+                    submit = { email, password ->
+                        GlobalState.signup(email, password)
+                        navController.navigate(AppScreen.Profile.name)
+                    }
                 )
             }
             composable(route = AppScreen.LogIn.name){
@@ -450,7 +467,7 @@ fun SummaryPreview() {
 }
 
 @Composable
-fun SupabaseTest(login: () -> Unit){
+fun SupabaseTest(signup: () -> Unit, login: () -> Unit){
     var users by remember { mutableStateOf<List<User>>(listOf()) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -466,7 +483,7 @@ fun SupabaseTest(login: () -> Unit){
                 modifier = Modifier.padding(8.dp)
             )
             Row {
-                Button(onClick = { /*TODO*/ }) {
+                Button(onClick = { signup() }) {
                     Text("Sign Up")
                 }
                 Button(onClick = { login() }) {
@@ -479,6 +496,32 @@ fun SupabaseTest(login: () -> Unit){
         Text("Welcome ${GlobalState.user!!.email}")
     }
 
+}
+
+@Composable
+fun SignUpScreen(submit: (String, String) -> Unit){
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    Column {
+        TextField(
+            value = email,
+            onValueChange = {email = it},
+            label = {Text("Email")}
+        )
+        TextField(
+            value = password,
+            onValueChange = {password = it},
+            label = {Text("Password")}
+        )
+        Button(
+            modifier = Modifier.padding(8.dp),
+            onClick = { submit(email, password) }
+        )
+        {
+            Text("Sign In")
+        }
+    }
 }
 
 @Composable
@@ -517,6 +560,7 @@ fun LogInScreen(submit: (String, String) -> Unit, retry: Boolean = false){
 fun DarkThemePreview(){
     AutoApplyTheme(darkTheme = true) {
         SupabaseTest(
+            signup = {},
             login = {}
         )
     }

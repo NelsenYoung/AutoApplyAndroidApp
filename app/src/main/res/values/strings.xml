@@ -4,6 +4,7 @@
     <string name="summary">Summary</string>
     <string name="profile">Profile</string>
     <string name="log_in">Log in</string>
+    <string name="sign_up">Sign up</string>
 
     <!-- Job Titles -->
     <string name="software_engineer">Software Engineer</string>
